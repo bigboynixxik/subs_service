@@ -68,7 +68,33 @@ func (s *subscriptionSrv) List(ctx context.Context) ([]models.Subscription, erro
 func (s *subscriptionSrv) CalculateTotalCost(ctx context.Context, userID uuid.UUID, serviceName string, from, to time.Time) (int, error) {
 	subs, err := s.repo.GetTotalCost(ctx, userID, serviceName, from, to)
 	if err != nil {
-		return 0, fmt.Errorf("Service.CalculateTotalCost: %w", err)
+		return 0, fmt.Errorf("service.CalculateTotalCost: %w", err)
 	}
 
+	var totalCost int
+
+	for _, sub := range subs {
+		overlapStart := sub.StartDate
+		if from.After(overlapStart) {
+			overlapStart = from
+		}
+
+		overlapEnd := to
+		if sub.EndDate != nil && sub.EndDate.Before(to) {
+			overlapEnd = *sub.EndDate
+		}
+
+		if !overlapStart.After(overlapEnd) {
+			years := overlapEnd.Year() - overlapStart.Year()
+			months := int(overlapEnd.Month()) - int(overlapStart.Month())
+
+			totalMonths := years*12 + months + 1
+
+			if totalMonths > 0 {
+				totalCost += totalMonths * sub.Price
+			}
+		}
+	}
+
+	return totalCost, nil
 }
