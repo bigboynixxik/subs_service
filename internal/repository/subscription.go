@@ -142,8 +142,8 @@ func (r *SubscriptionRepo) List(ctx context.Context) ([]models.Subscription, err
 	}
 	return subs, nil
 }
-func (r *SubscriptionRepo) GetTotalCost(ctx context.Context, userID uuid.UUID, serviceName string, from, to time.Time) (int, error) {
-	queryBuilder := r.sq.Select("COALESCE(SUM(price), 0)").
+func (r *SubscriptionRepo) GetTotalCost(ctx context.Context, userID uuid.UUID, serviceName string, from, to time.Time) ([]models.Subscription, error) {
+	queryBuilder := r.sq.Select("id", "service_name", "price", "user_id", "start_date", "end_date").
 		From("subscriptions").
 		Where(sq.Eq{"user_id": userID}).
 		Where(sq.LtOrEq{"start_date": to}).
@@ -156,12 +156,32 @@ func (r *SubscriptionRepo) GetTotalCost(ctx context.Context, userID uuid.UUID, s
 	}
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
-		return 0, fmt.Errorf("repository.GetTotalCost query: %w", err)
+		return nil, fmt.Errorf("repository.GetTotalCost query: %w", err)
 	}
-	var totalCost int
-	err = r.db.QueryRow(ctx, query, args...).Scan(&totalCost)
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return 0, fmt.Errorf("repository.GetTotalCost scan: %w", err)
+		return nil, fmt.Errorf("repository.GetTotalCost execute: %w", err)
 	}
-	return totalCost, nil
+	defer rows.Close()
+
+	var subs []models.Subscription
+	for rows.Next() {
+		var sub models.Subscription
+		err = rows.Scan(
+			&sub.ID,
+			&sub.ServiceName,
+			&sub.Price,
+			&sub.UserID,
+			&sub.StartDate,
+			&sub.EndDate)
+		if err != nil {
+			return nil, fmt.Errorf("repository.GetTotalCost scan: %w", err)
+		}
+		subs = append(subs, sub)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("repository.GetTotalCost scan: %w", err)
+	}
+	return subs, nil
 }
