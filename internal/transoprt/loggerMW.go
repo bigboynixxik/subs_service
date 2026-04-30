@@ -1,1 +1,18 @@
-package transoprt
+package middleware
+
+import (
+	"log/slog"
+	"net/http"
+
+	"subs_service/pkg/logger"
+)
+
+func LoggingMiddleware(baseLogger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqLogger := baseLogger.With("method", r.Method, "path", r.URL.Path)
+		ctx := logger.WithContext(r.Context(), reqLogger)
+		reqWithContext := r.WithContext(ctx)
+
+		next.ServeHTTP(w, reqWithContext)
+	})
+}
