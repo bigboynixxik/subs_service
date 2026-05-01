@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    container_name: subs_app
+    restart: on-failure
+    env_file:
+      - .env
+    ports:
+      - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
+    depends_on:
+      subs_postgres:
+        condition: service_healthy
+  subs_postgres:
+    image: postgres:16-alpine
+    container_name: subs_db
+    env_file:
+      - .env
+    volumes:
+      - subs_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d subs_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  subs_pg_data:
+
