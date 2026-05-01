@@ -1,0 +1,245 @@
+basePath: /
+definitions:
+  internal_transport_rest.SubscriptionRequest:
+    properties:
+      end_date:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_transport_rest.SubscriptionResponse:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  subs_service_pkg_response.ErrorResponse:
+    properties:
+      error:
+        properties:
+          code:
+            type: string
+          message:
+            type: string
+        type: object
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API для агрегации данных об онлайн подписках пользователей.
+  title: Subscription Service API
+  version: "1.0"
+paths:
+  /subscriptions:
+    get:
+      description: Получает массив всех подписок в системе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список подписок
+          schema:
+            items:
+              $ref: '#/definitions/internal_transport_rest.SubscriptionResponse'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+      summary: Список всех подписок
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новую онлайн подписку пользователя
+      parameters:
+      - description: Данные подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_rest.SubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: id созданной подписки
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Некорректные данные запроса
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+      summary: Создать подписку
+      tags:
+      - subscriptions
+  /subscriptions/{id}:
+    delete:
+      description: Удаляет запись о подписке из базы данных
+      parameters:
+      - description: ID подписки (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус удаления
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "404":
+          description: Подписка не найдена
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+      summary: Удалить подписку
+      tags:
+      - subscriptions
+    get:
+      description: Возвращает данные подписки по ее UUID
+      parameters:
+      - description: ID подписки (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные подписки
+          schema:
+            $ref: '#/definitions/internal_transport_rest.SubscriptionResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "404":
+          description: Подписка не найдена
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+      summary: Получить подписку
+      tags:
+      - subscriptions
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные существующей подписки по ее ID
+      parameters:
+      - description: ID подписки (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Новые данные подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_transport_rest.SubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус обновления
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Некорректные данные запроса
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "404":
+          description: Подписка не найдена
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+      summary: Обновить подписку
+      tags:
+      - subscriptions
+  /subscriptions/cost:
+    get:
+      description: Считает суммарную стоимость подписок за выбранный период для пользователя
+        с возможностью фильтрации по сервису
+      parameters:
+      - description: ID пользователя (UUID)
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Название сервиса (опционально)
+        in: query
+        name: service_name
+        type: string
+      - description: Начало периода (ММ-ГГГГ)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Конец периода (ММ-ГГГГ)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Суммарная стоимость
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Некорректные параметры запроса
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/subs_service_pkg_response.ErrorResponse'
+      summary: Подсчет стоимости подписок
+      tags:
+      - subscriptions
+swagger: "2.0"
