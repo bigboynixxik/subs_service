@@ -1,4 +1,4 @@
-package middleware
+package transport
 
 import (
 	"log/slog"
